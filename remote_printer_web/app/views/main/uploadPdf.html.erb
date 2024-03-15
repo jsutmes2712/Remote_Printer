@@ -1,0 +1,35 @@
+<!-- Form with the pdf and the configuration -->
+<!-- This form send the ifto to /postPdf that post it to de server -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+        @import (“url”);
+    </style>
+  </head>
+  <body>
+    <%= form_tag("/postPdf", method: "post", multipart: true) do %>
+      <!-- The pdf selector -->
+      <%= content_tag(:div, class: "form-group") do %>
+        <%= label_tag(:exampleFormControlFile1, "Seleccione su PDF: ") %>
+        <%= file_field_tag(:exampleFormControlFile1, class: "form-control-file") %>
+      <% end %>
+
+      <!-- The printer selector -->
+      <%= label_tag(:selected_option, "Elige la impresora: ") %>
+      <select name="selected_option">
+        <% @result.each do |option| %>
+          <option value="<%= option %>"><%= option %></option>
+        <% end %>
+      </select>
+
+      <br>
+      <label for="integer_selector">Selecciona un número de copias: </label>
+      <%= number_field_tag 'integer_selector', nil, in: 1..100, step: 1 %>
+
+      <br>
+      <!-- send button -->
+      <%= submit_tag("Enviar", class: "btn-send") %>
+    <% end %>
+  </body>
+</html>
