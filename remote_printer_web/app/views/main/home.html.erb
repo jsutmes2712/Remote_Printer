@@ -2,9 +2,12 @@
 <html>
     <head>
     </head>
-    <body>
-        <h1 class="bg-blue-500 ">HOME PRINT PAGE</h1>
-        <h2><%= link_to "Enviar PDF", "/uploadPdf" %></h2>
+    <body >   
+    <div class="px-40 pt-10 text-center ">
+        <div class="w-full">
+        <%= link_to t('IMPRIMIR PDF'), "/uploadPdf", class: "font-serif py-3 rounded-lg text-center hover:bg-red-900 bg-red-600 text-red-50 drop-shadow-sm block w-full text-xl shadow-md shadow-gray-500" %>
+        </div>
+    </div>
     </body>
 </html>
     
