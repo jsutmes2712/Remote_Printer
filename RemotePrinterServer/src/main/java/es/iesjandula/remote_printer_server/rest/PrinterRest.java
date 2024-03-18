@@ -84,8 +84,8 @@ public class PrinterRest
 
 	@RequestMapping(method = RequestMethod.POST, value = "/print", consumes = "multipart/form-data")
 	public ResponseEntity<?> printPDF(@RequestParam(required = true) String printerName,
-			@RequestParam(required = true) Integer numCopies,
-			@RequestBody(required = true) MultipartFile file)
+			@RequestParam(required = true) Integer numCopies, @RequestParam(required = true) String orientation,
+			@RequestParam(required = true) String color, @RequestBody(required = true) MultipartFile file)
 	{
 		try
 		{
@@ -94,9 +94,11 @@ public class PrinterRest
 			printAction.setPrinterName(printerName);
 			printAction.setFileName(file.getOriginalFilename());
 			printAction.setNumCopies(numCopies);
+			printAction.setColor(color);
+			printAction.setOrientation(orientation);
 			printAction.setStatus(PrintAction.TO_DO);
 			printAction.setDate(new Date());
-			
+
 			this.writeText(this.filePath + printAction.getFileName(), file.getBytes());
 			this.printActionRepository.saveAndFlush(printAction);
 
@@ -116,8 +118,8 @@ public class PrinterRest
 		try
 		{
 
-			List<PrintAction> actions =  this.printActionRepository.findByStatus(PrintAction.TO_DO);
-			
+			List<PrintAction> actions = this.printActionRepository.findByStatus(PrintAction.TO_DO);
+
 			if (!actions.isEmpty())
 			{
 				// --- ORDENAMOS LAS FECHAS ---
@@ -125,24 +127,38 @@ public class PrinterRest
 
 				// --- OBTENEMOS LA PRIMERA TASK ---
 				PrintAction printAction = actions.get(0);
-				
+
 				printAction.setStatus(PrintAction.SEND);
 				this.printActionRepository.saveAndFlush(printAction);
-				
+
 				File file = new File(this.filePath + printAction.getFileName());
 
 				byte[] contenidoDelFichero = Files.readAllBytes(file.toPath());
 
 				InputStreamResource outcomeInputStreamResource = new InputStreamResource(
 						new java.io.ByteArrayInputStream(contenidoDelFichero));
-				
+
 				HttpHeaders headers = new HttpHeaders();
 
 				headers.set("Content-Disposition", "attachment; filename=" + file.getName());
-				headers.set("numCopies", ""+printAction.getNumCopies());
+				headers.set("numCopies", "" + printAction.getNumCopies());
 				headers.set("printerName", printAction.getPrinterName());
-				
+				if (printAction.getColor().equalsIgnoreCase("Color"))
+				{
+					headers.set("color", "true");
+				} else
+				{
+					headers.set("color", "false");
+				}
 
+				if (printAction.getOrientation().equalsIgnoreCase("Vertical"))
+				{
+					headers.set("orientation", "true");
+				} else
+				{
+					headers.set("orientation", "false");
+				}
+				
 				return ResponseEntity.ok().headers(headers).body(outcomeInputStreamResource);
 			}
 
@@ -162,7 +178,7 @@ public class PrinterRest
 	 * @param name
 	 * @param content
 	 */
-	public void writeText(String name, byte[] content)
+	private void writeText(String name, byte[] content)
 	{
 		// DELCARAMOS FLUJOS
 		FileOutputStream fileOutputStream = null;

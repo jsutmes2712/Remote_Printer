@@ -45,6 +45,12 @@ public class PrintAction
 	private int numCopies;
 	
 	@Column
+	private String color;
+	
+	@Column
+	private String orientation;
+	
+	@Column
 	private String status;
 	
 	@Column
