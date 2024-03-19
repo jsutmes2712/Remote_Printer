@@ -6,12 +6,15 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= stylesheet_link_tag "tailwind", "inter-font", "data-turbo-track": "reload" %>
-
+    <script src="https://cdn.tailwindcss.com"></script>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="bg-repeat">
+    <main >
+      <h1 class ="text-4xl bg-red-600 text-white p-5 font-serif font-bold shadow-md shadow-stone-500 bg-gradient-to-r">RemotePrinterWeb</h1>
+      <%= yield %>
+    </main>
   </body>
 </html>

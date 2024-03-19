@@ -3,33 +3,63 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <style>
-        @import (“url”);
-    </style>
+    <%= javascript_include_tag 'update_button_text' %>
+    <%= javascript_include_tag 'drag_over_handler' %>
   </head>
-  <body>
-    <%= form_tag("/postPdf", method: "post", multipart: true) do %>
-      <!-- The pdf selector -->
-      <%= content_tag(:div, class: "form-group") do %>
-        <%= label_tag(:exampleFormControlFile1, "Seleccione su PDF: ") %>
-        <%= file_field_tag(:exampleFormControlFile1, class: "form-control-file") %>
-      <% end %>
+  <body >
 
-      <!-- The printer selector -->
-      <%= label_tag(:selected_option, "Elige la impresora: ") %>
-      <select name="selected_option">
-        <% @result.each do |option| %>
-          <option value="<%= option %>"><%= option %></option>
+    <%= form_tag("/postPdf", method: "post", multipart: true, class: "text-center") do %>
+      <div class="py-10">
+
+        <div class="py-32 mb-10">
+        <!-- The pdf selector -->
+        <%= content_tag(:div, class: "form-group") do %>
+          <%= file_field_tag(:exampleFormControlFile1, class: "hidden", id: "fileInput", onchange: "updateButtonText(this)", ondragover: "dragOverHandler(event)", ondrop: "dropHandler(event)") %>
+          <label for="fileInput" id="fileButton" class="bg-red-600 sm:px-36 sm:py-20 rounded-lg text-white hover:bg-red-900 font-serif sm:text-2xl font-bold text-xs px-20 py-8 shadow-md shadow-gray-500" ondragover="dragOverHandler(event)" ondrop="dropHandler(event)">
+            Arrastra o selecciona un archivo PDF
+          </label>
         <% end %>
-      </select>
+      </div>
 
-      <br>
-      <label for="integer_selector">Selecciona un número de copias: </label>
-      <%= number_field_tag 'integer_selector', nil, in: 1..100, step: 1 %>
+        <div class = " py-10 mx-auto space-y-4 bg-gray-200 w-1/3 rounded-2xl shadow-md shadow-gray-500 ">  
+          <!-- The printer selector -->
+          <div class="">
+            <%= label_tag(:selected_option, "Destino: ", class: "text-xl font-bold font-serif text-gray-900") %>
+            <select name="selected_option" class="rounded-lg border-2 border-gray-900 hover:border-red-900 w-72 text-center font-serif font-bold">
+              <% @result.each do |option| %>
+                <option value="<%= option %>"><%= option %></option>
+              <% end %>
+            </select>
+          </div>
 
-      <br>
-      <!-- send button -->
-      <%= submit_tag("Enviar", class: "btn-send") %>
+          <div class="">
+            <label for="integer_selector", class= "text-xl font-bold font-serif text-gray-900 pr-4">Numero de Copias: </label>
+            <%= number_field_tag 'integer_selector', 1, in: 1..100, step: 1 ,class:"rounded-lg border-2 border-gray-900 hover:border-red-900 text-center font-serif font-bold"%>
+          </div>
+
+          <div class="">
+            <%= label_tag(:selected_color, "Color: ", class: "text-xl font-bold font-serif text-gray-900") %>
+            <select name="selected_color" class="rounded-lg border-2 border-gray-900 hover:border-red-900 w-72 text-center font-serif font-bold">         
+                <option value="color">Color</option>
+                <option value="negro">Blanco y negro</option>
+            </select>
+          </div>
+
+          <div class="">
+            <%= label_tag(:selected_orientation, "Orientación: ", class: "text-xl font-bold font-serif text-gray-900") %>
+            <select name="selected_orientation" class="rounded-lg border-2 border-gray-900 hover:border-red-900 w-72 text-center font-serif font-bold">         
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+            </select>
+          </div>
+
+          <div class="my-14"> 
+            <!-- send button -->
+            <%= submit_tag("Enviar", class: "btn-send bg-red-600 text-red-50 rounded-xl hover:bg-red-900 py-3 px-8 drop-shadow-sm shadow-md shadow-gray-500 font-bold font-serif w-72")  %>
+          </div>  
+        </div>
+
+      </div>
     <% end %>
   </body>
 </html>
