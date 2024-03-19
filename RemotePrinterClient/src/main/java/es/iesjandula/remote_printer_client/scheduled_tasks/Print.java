@@ -1,6 +1,7 @@
 package es.iesjandula.remote_printer_client.scheduled_tasks;
 
 import java.awt.print.PageFormat;
+import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.printing.PDFPageable;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -59,9 +61,10 @@ public class Print
 				String printerName = response.getFirstHeader("printerName").getValue();
 				String color = response.getFirstHeader("color").getValue();
 				String vertical = response.getFirstHeader("orientation").getValue();
-				
+				String faces = response.getFirstHeader("faces").getValue();
 
-				this.printFile(printerName, Integer.valueOf(numCopies), Boolean.valueOf(color), Boolean.valueOf(vertical), inputStream);
+				this.printFile(printerName, Integer.valueOf(numCopies), Boolean.valueOf(color),
+						Boolean.valueOf(vertical), Boolean.valueOf(faces), inputStream);
 			}
 		} catch (JsonProcessingException exception)
 		{
@@ -86,74 +89,54 @@ public class Print
 		}
 	}
 
-	public void printFile(String printerName, int numCopies, boolean color, boolean vertical, InputStream input)
+	public void printFile(String printerName, int numCopies, boolean color, boolean vertical, boolean faces,
+			InputStream input)
 	{
 
 		// --- FLUJOS ---
 		DataInputStream dataInputStream = null;
-		PDDocument pdDocument= null;
+		PDDocument pdDocument = null;
 		try
 		{
 			dataInputStream = new DataInputStream(input);
 
-			byte[] data = dataInputStream.readAllBytes();
-
-			PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
-
-			// Buscar la impresora por su nombre
-			PrintService selectedPrinter = null;
-			for (PrintService printer : printServices)
-			{
-				if (printer.getName().equals(printerName))
-				{
-					selectedPrinter = printer;
-					break;
-				}
-			}
-
+			PrintService selectedPrinter = this.selectPrinter(printerName);
+			
 			if (selectedPrinter != null)
 			{
-				// Crear un trabajo de impresión
 				PrinterJob printerJob = PrinterJob.getPrinterJob();
 
-				// Cargar el documento a imprimir
-				try
+				pdDocument = PDDocument.load(input);
+				PDFPageable pageable = new PDFPageable(pdDocument);
+				PageFormat format = pageable.getPageFormat(0);
+				if (vertical)
 				{
-					
-					pdDocument = PDDocument.load(data);
-					PageFormat format = new PageFormat();
-					if (vertical)
-					{
-
-						format.setOrientation(PageFormat.PORTRAIT);
-					} else
-					{
-						format.setOrientation(PageFormat.LANDSCAPE);
-					}
-					
-					printerJob.setPrintable(new PDFPrintable(pdDocument), format);
-					
-					printerJob.setPrintService(selectedPrinter);
-					HashPrintRequestAttributeSet attributeSet = new HashPrintRequestAttributeSet();
-
-					if (color)
-					{
-						attributeSet.add(Chromaticity.COLOR);
-					} else
-					{
-						attributeSet.add(Chromaticity.MONOCHROME);
-					}
-
-					attributeSet.add(new Copies(numCopies));
-//					attributeSet.add(Sides.DUPLEX);
-					printerJob.print(attributeSet);
-					
-					log.info("yo ya");
-				} catch (Exception exception)
+					format.setOrientation(PageFormat.PORTRAIT);
+				} else
 				{
-					String error = "Error imprimiendo";
-					log.error(error, exception);
+					format.setOrientation(PageFormat.LANDSCAPE);
 				}
+
+				printerJob.setPrintable(new PDFPrintable(pdDocument), format);
+				printerJob.setPrintService(selectedPrinter);
+				HashPrintRequestAttributeSet attributeSet = new HashPrintRequestAttributeSet();
+				if (color)
+				{
+					attributeSet.add(Chromaticity.COLOR);
+				} else
+				{
+					attributeSet.add(Chromaticity.MONOCHROME);
+				}
+				if (faces)
+				{
+					attributeSet.add(Sides.DUPLEX);
+				} else
+				{
+					attributeSet.add(Sides.ONE_SIDED);
+				}
+				attributeSet.add(new Copies(numCopies));
+				printerJob.print(attributeSet);
+
 			} else
 			{
 				String error = "Printer erronea";
@@ -162,31 +145,57 @@ public class Print
 
 		} catch (IOException exception)
 		{
-			String message = "Error";
-			log.error(message, exception);
+			String error = "Error leyendo el fichero";
+			log.error(error, exception);
+
+		} catch (PrinterException exception)
+		{
+			String error = "Error imprimiendo";
+			log.error(error, exception);
 		} finally
 		{
-			if (dataInputStream != null)
+			this.closePrintInputs(dataInputStream, pdDocument);
+		}
+	}
+
+	private PrintService selectPrinter(String printerName)
+	{
+		PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
+		PrintService selectedPrinter = null;
+		int i = 0;
+		while (i < printServices.length && selectedPrinter == null)
+		{
+			if (printServices[0].getName().equals(printerName))
 			{
-				try
-				{
-					dataInputStream.close();
-				} catch (IOException exception)
-				{
-					String message = "Error";
-					log.error(message, exception);
-				}
+				selectedPrinter = printServices[0];
 			}
-			if (pdDocument != null)
+			i++;
+		}
+		return selectedPrinter;
+	}
+
+	private void closePrintInputs(DataInputStream dataInputStream, PDDocument pdDocument)
+	{
+		if (dataInputStream != null)
+		{
+			try
 			{
-				try
-				{
-					pdDocument.close();
-				} catch (IOException exception)
-				{
-					String message = "Error";
-					log.error(message, exception);
-				}
+				dataInputStream.close();
+			} catch (IOException exception)
+			{
+				String message = "Error";
+				log.error(message, exception);
+			}
+		}
+		if (pdDocument != null)
+		{
+			try
+			{
+				pdDocument.close();
+			} catch (IOException exception)
+			{
+				String message = "Error";
+				log.error(message, exception);
 			}
 		}
 	}
